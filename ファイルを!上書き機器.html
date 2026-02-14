@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Web Editor</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background: #f4f4f9; }
+        .controls { margin-bottom: 10px; display: flex; gap: 10px; }
+        textarea {
+            width: 100%;
+            height: 70vh;
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button { padding: 8px 16px; cursor: pointer; }
+        .status { font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+
+    <h2>簡易テキストエディタ</h2>
+    <div class="controls">
+        <button id="btnOpen">ファイルを開く</button>
+        <button id="btnSave" disabled>上書き保存</button>
+        <span id="fileName" class="status">ファイルが選択されていません</span>
+    </div>
+
+    <textarea id="editor" placeholder="ここにファイルの内容が表示されます..."></textarea>
+
+    <script>
+        let fileHandle;
+        const btnOpen = document.getElementById('btnOpen');
+        const btnSave = document.getElementById('btnSave');
+        const editor = document.getElementById('editor');
+        const fileNameDisplay = document.getElementById('fileName');
+
+        // ファイルを開く処理
+        btnOpen.addEventListener('click', async () => {
+            try {
+                // ファイル選択ダイアログを表示
+                [fileHandle] = await window.showOpenFilePicker({
+                    types: [
+                        {
+                            description: 'Text Files',
+                            accept: { 'text/*': ['.html', '.css', '.js', '.json'] }
+                        },
+                    ],
+                });
+
+                const file = await fileHandle.getFile();
+                const contents = await file.text();
+                
+                editor.value = contents;
+                fileNameDisplay.textContent = `編集中のファイル: ${file.name}`;
+                btnSave.disabled = false; // 保存ボタンを有効化
+            } catch (err) {
+                console.error('キャンセルまたはエラー:', err);
+            }
+        });
+
+        // 上書き保存処理
+        btnSave.addEventListener('click', async () => {
+            if (!fileHandle) return;
+
+            try {
+                // 書き込み権限の確認
+                const writable = await fileHandle.createWritable();
+                // 内容を書き込む
+                await writable.write(editor.value);
+                // ファイルを閉じる
+                await writable.close();
+                
+                alert('上書き保存が完了しました！');
+            } catch (err) {
+                console.error('保存に失敗しました:', err);
+                alert('保存に失敗しました。アクセス許可を確認してください。');
+            }
+        });
+    </script>
+</body>
+</html>
